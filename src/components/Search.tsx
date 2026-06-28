@@ -9,7 +9,6 @@ type SearchProps = {
 export default function Search({ label }: SearchProps) {
   const ref = useRef<null | HTMLInputElement>(null);
   const id = useId();
-
   return (
     <div className="flex p-3 bg-slate-800 rounded-lg hover:bg-slate-700 transition-all duration-150 focus-within:bg-slate-800 focus-within:outline-1 gap-2">
       <SearchIcon className="cursor-pointer" onClick={() => ref.current?.focus()} />

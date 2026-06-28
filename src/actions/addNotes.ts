@@ -4,6 +4,7 @@ import { addNoteFormSchemaType } from "@/components/AddNoteForm";
 import { db } from "@/db";
 import { notesTable } from "@/db/schema";
 import { error } from "console";
+import { revalidatePath } from "next/cache";
 
 type Success = {
   success: true;
@@ -40,6 +41,6 @@ export async function addNotes(
       },
     };
   }
-
+  revalidatePath("/")
   return { success: true };
 }

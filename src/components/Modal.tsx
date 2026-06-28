@@ -1,0 +1,113 @@
+"use client";
+import {
+  createContext,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
+import { createPortal } from "react-dom";
+import useMounted from "@/hooks/useMounted";
+
+type ModalProps = {
+  defaultOpen?: boolean;
+  onSuccess?: () => void;
+  onAbort?: () => void;
+  children: React.ReactNode;
+};
+
+type ModalContextProps = {
+  isOpen: boolean;
+  setIsOpen: React.Dispatch<SetStateAction<boolean>>;
+  abort: () => void;
+  success: () => void
+};
+
+const ModalContext = createContext<ModalContextProps | null>(null);
+
+export function useModal() {
+  const values = useContext(ModalContext);
+
+  if (values === null)
+    throw new Error("useModal must be used inside the Modal component");
+
+  return values;
+}
+
+export function Modal({
+  defaultOpen = false,
+  onAbort = () => {},
+  onSuccess = () => {},
+  children,
+}: ModalProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  function abort(){
+    setIsOpen(false)
+    onAbort()
+  }
+
+  return (
+    <ModalContext.Provider value={{ isOpen, setIsOpen, abort, success: onSuccess }}>
+      {children}
+    </ModalContext.Provider>
+  );
+}
+
+export function Overlay() {
+  return <div className="bg-black/50 fixed inset-0" />;
+}
+
+export function ModalContent({ children, onAbort = () => {} }: { children: React.ReactNode; onAbort?: () => void }) {
+  const { isOpen, setIsOpen } = useModal();
+  const [mounted, setMounted] = useMounted();
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setIsOpen(false);
+    }
+
+    if (isOpen) window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isOpen, setIsOpen]);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    isOpen && (
+      <>
+        <Overlay />
+        <div
+          onClick={() => {
+            setIsOpen(false)
+            onAbort()
+          }}
+          className="fixed inset-0 flex items-center justify-center"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {children}
+          </div>
+        </div>
+      </>
+    ),
+    document.body,
+  );
+}
+
+export function ModalTriggerButton({
+  children,
+  ...props
+}: { children: React.ReactNode } & React.ComponentProps<"button">) {
+  const { setIsOpen } = useModal();
+
+  return (
+    <button onClick={() => setIsOpen(true)} {...props}>
+      {children}
+    </button>
+  );
+}
